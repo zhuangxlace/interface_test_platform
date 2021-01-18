@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body{
+            {#这个代表全局默认样式#}{#fixed背景图片不会随着页面的滚动而滚动。#}{#cover此时会保持图像的纵横比并将图像缩放成将完全覆盖背景定位区域的最小大小。#}
+            background: url("../static/home.jpg");
+            background-attachment: fixed;
+            background-size: cover;
+        }
+</style>
+</head>
+<body >
+    <!--text-align:设置文字的对齐方式，border-radius:向div元素添加圆角边框,box-shadow:给属性加阴影-->
+    <div style="text-align: center">
+        <h1 style="color: white;margin-left: 410px">
+            欢迎 {{ username }} 使用接口测试平台
+        </h1>
+
+        {#        中间这里要放 超链接传送门#}
+        <!--border边框尺寸（solid实线）颜色;opacity设置透明度-->
+        <div style="border: 1px solid black;border-radius: 10px 0px 0px 10px;text-align: center;background-color: #e3ffe3;opacity: 0.8;color: white;margin-left: 300px">
+            <h3 style="color: #3e2935">欢迎使用传送门：</h3>
+            <strong>
+
+            {% for i in hrefs %}
+                <a href="{{ i.href }}" target="_blank" style="color:#353c48;text-decoration: none">
+                    <code style="font-size: large">{{ i.name }}:</code>{{ i.href }}
+                </a> <br>
+            {% endfor %}
+
+            </strong>
+            <br>
+        </div>
+        {#        中间这里要放 超链接传送门#}
+
+
+        <br>
+        <div style="border: 1px solid black;border-radius: 10px 0px 0px 10px;text-align: center;background-color: #e3ffe3;opacity: 0.8;color: white;margin-left: 300px">
+            <h3 style="color: #3e2935">您的项目：</h3>
+            <span style="color: black">
+            {#       这里存放后续的个人项目列表循环，类似传送门的套路 ,点击自己创建的项目可以直接进入项目内     #}
+            </span>
+            <br>
+        </div>
+
+        <br>
+        <div style="border: 1px solid black;border-radius: 10px 0px 0px 10px;text-align: center;background-color: #e3ffe3;opacity: 0.8;color: white;margin-left: 300px">
+            <h3 style="color: #3e2935">最新消息：</h3>
+            <span style="color: black">
+            帮助页面上线；<br>
+            后台开启，仅限有管理权限同学使用；<br>
+            项目列表上线，您现在可以进入所有项目内了 <br>
+                </span>
+            <br>
+        </div>
+
+        <!--border设置边框，width设置div宽度，margin-left左外边距，padding-left左内边距-->
+
+        <br>
+        <div style="border: 1px solid black;border-radius: 10px 0px 0px 10px;text-align: center;background-color: #e3ffe3;opacity: 0.8;color: white;margin-left: 300px">
+            <br>
+            <textarea id="tucao_input" cols="50" rows="5" placeholder="匿名吐槽专用,点击 发送按钮即可反馈！"
+                  style="color: black;border-radius: 5px;padding-left: 10px;box-shadow: 4px 4px 9px grey"></textarea>
+            <br>
+            <button style="color: black;border-radius: 0px 0px 50px 50px;width: 100px" onclick="pei()">发送</button>
+            <br><br>
+        </div>
+
+    </div>
+
+    <script>
+        function pei() {
+            $.post("/pei/",{
+                "tucao_text":document.getElementById('tucao_input').value,
+            },function (ret) {
+                alert('已成功吐槽！')
+            })
+        }
+</script>
+
+</body>
+</html>

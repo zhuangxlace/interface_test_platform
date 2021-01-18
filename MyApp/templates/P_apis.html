@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        .button_type{
+            background-color: #7291d9;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-default" role="navigation" style="position: absolute;top: 0px;left: 300px;width:800px;z-index: 1">
+    <div class="container-fluid">
+    <div class="navbar-header">
+        <span style="font-size: xx-small" class="navbar-brand" >项目名称：{{ project.name }}</span>
+        <a class="navbar-brand" href="/project_list/">返回项目列表</a>
+    </div>
+    <div>
+        <ul class="nav navbar-nav">
+            <li class="active"><a href="/apis/{{ project.id }}/">接口库</a></li>
+            <li><a href="/cases/{{ project.id }}/">用例库</a></li>
+            <li><a href="/project_set/{{ project.id }}">项目设置</a></li>
+        </ul>
+    </div>
+    </div>
+    </nav>
+{#    <div style="background-color: white;color: #64d92c;text-align: center">#}
+{#        <h2>接口库：#}
+{#            <!--对应写法一-->#}
+{#            {%   for i in project_name %}#}
+{#            <span style="color: #d97399">{{ i.name }}</span>#}
+{#            {%  endfor %}#}
+{#            <!--对应写法二三-->#}
+{#            <span style="color: #d97399">{{ project_name }}</span>#}
+{#        </h2>#}
+{#    </div>#}
+    <table class="table table-striped" style="top: 50px;position: absolute">
+        <thead>
+            <tr>
+                <th style="width: 10%">id</th>
+                <th style="width: 20%">接口名称</th>
+                <th style="width: 40%">url</th>
+                <th style="width: 30%">操作</th>
+            </tr>
+        </thead>
+        {% for i in apis %}
+        <tbody>
+            <tr>
+                <td>{{ i.id }}</td>
+                <td>{{ i.name }}</td>
+                <td>{{ i.api_url }}</td>
+                <td>
+                    <button class="btn btn-primary" onclick="ts_button('{{ i.id }}')">调试</button>
+                    <button onclick="open_bz({{ i.id }})" class="btn btn-default">
+                        备注
+                    </button>
+{#                    <button class="button_type">复制</button>#}
+                    <button onclick="copy_api({{ i.id }})" class="btn btn-default">复制</button>
+                    <button onclick="error_test('{{ i.id }}')" class="btn btn-default">异常值测试</button>
+                    <button class="btn btn-danger"
+                            onclick="javascript:document.location.href='/delete_apis/{{ i.id }}/'">删除</button>
+                    <!--用于存放body，由于rawjson类型的数据中存在回车会导致500-->
+                    <input type="text" id="api_error_{{ i.id }}" value="{{ i.api_body }}" style="display: none"/>
+                </td>
+            </tr>
+        </tbody>
+        {% endfor %}
+    </table>
+    <div style="position: fixed;bottom: 0px;width: 100%;text-align: center;background-color: #bcd5c3;
+        border: 1px solid #d96d91;">
+        <button onclick="javascript:document.location.href='/project_api_add/{{ project.id }}/'" class="btn btn-info">
+            新增接口
+        </button>
+        <button class="btn btn-default">全局请求头</button>
+        <button class="btn btn-default">全局域名</button>
+        <button class="btn btn-default">接口文档导入</button>
+        <button class="btn btn-default">抓包导入</button>
+        <button class="btn btn-default">加密算法</button>
+        <button id="" class="btn btn-default">登录态接口</button>
+    </div>
+{#    备注弹出框以及函数#}
+    <div id="bz" style="display: none;width: 50%;height: 30%;left:25%;top:35%;background-color: #bcd5c3;position: fixed;
+        border: 1px solid #d93134;text-align: center">
+        <!--这个不显示的input标签是为了存放api_id的，以便传给后台是哪个接口要修改备注-->
+        <input type="text" id="which_api" style="display: none"/>
+        <textarea id="bz_value" style="width: 100%;height: 80%" placeholder="请输入接口备注"></textarea>
+        <button onclick="save_api()" style="width: 49.9%">确定</button>
+        <button onclick="javascript:document.getElementById('bz').style.display = 'none'" style="width: 49%">取消</button>
+    </div>
+    <script>
+        function open_bz(api_id) {
+            document.getElementById('bz').style.display = 'block';
+            document.getElementById('which_api').value = api_id
+            $.post("/get_bz/",
+                {"api_id": api_id},
+                function (data, status) {
+                    document.getElementById("bz_value").value = data
+                }
+            )
+        }
+        function save_api() {
+            var api_id = document.getElementById('which_api').value
+            var bz = document.getElementById("bz_value").value
+            $.post("/save_bz/",
+                {
+                    "id": api_id,
+                    "des": bz
+                },
+                function (data, status) {
+                    document.getElementById("bz").style.display = "none"
+                    alert("修改成功")
+                }
+            )
+        }
+    </script>
+
+{#    调试弹出框以及函数#}
+    <div id="ts" style="display:none;background-color: #afa4a4;width: 80%;left: 10%;top: 10%;position: absolute;
+        border-radius: 5px;box-shadow: 4px 4px 8px 8px #76d955;color: white;padding-left: 10px ">
+        <div class="button-group" style="float: right">
+            <button id="save_api" class="btn btn-success">保存</button>
+            <button id="cancel_api" class="btn btn-default">取消</button>
+        </div>
+        <h4>接口:<small id="api_id"></small>-
+            <input style="color: black" id="api_name" type="text" placeholder="请输入接口名"/>
+        </h4>
+        <ul class="nav navbar-nav" style="width: 98%">
+            <li>
+                <select id="api_method" style="height: 40px;" class="form-control">
+                    <option value="none"> 请求方式</option>
+                    <option value="post" > POST</option>
+                    <option value="get" > GET</option>
+                    <option value="put" > PUT</option>
+                    <option value="delete"> DELETE</option>
+                </select>
+            </li>
+
+            <li style="width: -webkit-calc(100% - 225px)">
+                <input  id="api_url" style=";padding-left: 10px;width: 100%;height: 40px;color: black" type="text"
+                       placeholder='url: 如 /abcd/efgh/' value="">
+            </li>
+
+            <li >
+                <button id="ts_send" type="button" style="height: 40px;width: 120px;" class="btn btn-default">
+                    <span style="font-size: large">Send</span>
+                </button>
+            </li>
+        </ul>
+        <br><br><br>
+        <ul class="nav navbar-nav" style="width: 98%">
+            <li style="width: -webkit-calc(100% - 63px)">
+                <input id="api_hosts" style="padding-left: 10px;width: 100%;height: 40px;color: black" type="text" placeholder="hosts: 如http(s):www.baidu.com">
+            </li>
+            <li>
+                <button style="width: 60px;height: 40px" class="btn btn-default">
+                    <span>clear</span>
+                </button>
+            </li>
+        </ul>
+        <br><br><br>
+        <ul class="nav navbar-nav" style="width: 98%">
+            <li style="width: -webkit-calc(100% - 63px)">
+                <input id="api_headers" style="padding-left: 10px;width: 100%;height: 40px;color: black" type="text"
+                       placeholder="headers请求头： 如{'Content': 'application/json'}">
+            </li>
+            <li>
+                <button style="width: 60px;height: 40px" class="btn btn-default">
+                    <span>clear</span>
+                </button>
+            </li>
+        </ul>
+        <br><br><br>
+        <ul id="myTab" class="nav nav-tabs" >
+            <!--href="#None"是设置瞄点链接，点击后就会定位瞄点的地方(id=None)，-->
+            <li class="active"><a href="#none" data-toggle="tab" >none</a></li>
+            <li ><a href="#form-data" data-toggle="tab" >form-data</a></li>
+            <li ><a href="#x-www-form-urlencoded" data-toggle="tab" >x-www-form-urlencoded</a></li>
+            <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">raw <b class="caret"></b></a>
+                <ul class="dropdown-menu" role="menu" aria-labelledby="myTabDrop1">
+                    <li><a href="#Text" tabindex="-1" data-toggle="tab">Text</a></li>
+                    <li><a href="#JavaScript" tabindex="-1" data-toggle="tab">JavaScript</a></li>
+                    <li><a href="#Json" tabindex="-1" data-toggle="tab">Json</a></li>
+                    <li><a href="#Html" tabindex="-1" data-toggle="tab">Html</a></li>
+                    <li><a href="#Xml" tabindex="-1" data-toggle="tab">Xml</a></li>
+                </ul>
+            </li>
+            <li ><a href="#response" data-toggle="tab" >返回体</a></li>
+        </ul>
+
+        <div id="myTabContent" class="tab-content">
+            <!--隐藏的，当上面的瞄点id点击后才会被激活 in表示淡入显示 active表示初试显示-->
+            <div class="tab-pane fade in active" id="none" style="text-align: center;color: black">
+                <h3>这个请求将不会携带任何请求体</h3>
+                <h5>This request will not carry any request-body</h5>
+            </div>
+            <!--form-data键值对-->
+            <div class="tab-pane fade" id="form-data">
+                <div class="table-responsive" style="width: 98%;color: black">
+                    <table class="table table-bordered table-striped" id="mytable" style="background-color:white">
+                        <thead style="color: #337ab7;font-size: x-small">
+                          <tr>
+                            <td style="width: 30%">Key</td>
+                            <td style="width: 50%">Value</td>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td></td>
+                            <td></td>
+                          </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <button class="btn btn-default" id="add"><i class="fa fa-plus"></i> 添加新参数</button>
+                <script>window.jQuery || document.write('<script src="/static/201801271505/js/jquery-1.11.0.min.js"><\/script>')</script>
+                <script type="text/javascript" src="/static/201801271505/js/bootstable.js"></script>
+                <script type="text/javascript">
+                    $('#mytable').SetEditable({
+                        $addButton: $('#add'),
+                    });
+                </script>
+            </div>
+            <!--x-www-form-urlencoded键值对-->
+            <div class="tab-pane fade" id="x-www-form-urlencoded">
+                <div class="table-responsive" style="width: 98%;color: black">
+                    <table class="table table-bordered table-striped" id="mytable2" style="background-color:white">
+                        <thead style="color: #337ab7;font-size: x-small">
+                          <tr>
+                            <td style="width: 30%">Key</td>
+                            <td style="width: 50%">Value</td>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td></td>
+                            <td></td>
+                          </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <button class="btn btn-default" id="add2"><i class="fa fa-plus"></i> 添加新参数</button>
+                <script>window.jQuery || document.write('<script src="/static/201801271505/js/jquery-1.11.0.min.js"><\/script>')</script>
+                <script type="text/javascript" src="/static/201801271505/js/bootstable.js"></script>
+                <script type="text/javascript">
+                    $('#mytable2').SetEditable({
+                        $addButton: $('#add2'),
+                    });
+                </script>
+            </div>
+            <div class="tab-pane fade" id="Text">
+                <textarea id="raw_Text" style="width: 98%;height: 300px;color: black"></textarea>
+            </div>
+            <div class="tab-pane fade" id="JavaScript">
+                <textarea id="raw_JavaScript" style="width: 98%;height: 300px;color: black"></textarea>
+            </div>
+            <div class="tab-pane fade" id="Json">
+                <textarea id="raw_Json" style="width: 98%;height: 300px;color: black"></textarea>
+            </div>
+            <div class="tab-pane fade" id="Html">
+                <textarea id="raw_Html" style="width: 98%;height: 300px;color: black"></textarea>
+            </div>
+            <div class="tab-pane fade" id="Xml">
+                <textarea id="raw_Xml" style="width: 98%;height: 300px;color: black"></textarea>
+            </div>
+            <div class="tab-pane fade" id="response">
+                <textarea id="responce" style="width: 98%;height: 300px;color: black"></textarea>
+            </div>
+        </div>
+        <br>
+    </div>
+    {# 异常值测试 #}
+    <div id="error_div" style="display: none;border-radius:5px;width: 80%;
+    position: absolute;left: 10%;top: 10%;background-color: #3c4043;box-shadow: 4px 4px 8px grey;
+    color: white;padding-left: 10px;">
+{#        <div class="btn-group" style="float: right">#}
+{#            <button class="btn btn-success">开始测试</button>#}
+{#            <button id="error_close" class="btn btn-default">关闭</button>#}
+{#        </div>#}
+{#        <h4>接口：<small id="error_api_id" style="color: #64d92c"></small> 的异常值测试结果如下：</h4>#}
+{#        <strong>待替换数据:(用英文逗号隔开)</strong>#}
+{#        <input id="ready_error_data" type="text" style="color: black;border-radius: 5px;width: 99%"#}
+{#        value="'a',123,'',' ','./?*&^','中文'"> <br><br>#}
+{##}
+{#        <span>替换：username -> 123</span>#}
+{#        <textarea style="width: 99%;height: 50px;border-radius: 5px;color: black">#}
+{#        </textarea>#}
+{##}
+{#        <span>替换：username -> "aaa"</span>#}
+{#        <textarea style="width: 99%;height: 50px;border-radius: 5px;color: black">#}
+{#        </textarea>#}
+{##}
+{#        <span>替换：username -> "哈哈哈"</span>#}
+{#        <textarea style="width: 99%;height: 50px;border-radius: 5px;color: black">#}
+{#        </textarea>#}
+    </div>
+    <!--用于存放请求体apibody的不显示的输入框-->
+    <input type="text" style="display: none" id="error_api_body"/>
+    <script>
+        // 点击弹出调试窗口,并从后台数据库获取接口已有信息
+        function ts_button(api_id) {
+            // 三种写法
+            $("#ts").css("display","block");
+            //$("#ts").show()
+            //$("#ts")[0].style.display = "block"
+            $("#api_id").text(api_id);
+            $.post("/get_api_data/",
+                {
+                    "api_id": api_id
+                },
+                function (data, status) {
+                    //console.log(data+"的类型是"+typeof(data))    // object
+                    //console.log(JSON.stringify(data)+"的类型是"+typeof(JSON.stringify(data)))  // str
+                    //console.log(data.api_body+"长度"+data.api_body.length)  // str
+                    //console.log(JSON.parse(data.api_body)+"类型："+typeof(JSON.parse(data.api_body))+"长度"+JSON.parse(data.api_body).length)  // object
+                    //console.log("长度为:"+count)
+                    console.log(data)
+                    $("#api_name").val(data.name);
+                    var ts_host = $("#api_hosts").val(data.api_host);
+                    var ts_url = $("#api_url").val(data.api_url);
+                    $("#api_headers").val(data.api_header);
+                    var ts_method = $("#api_method").val(data.api_method);
+                    // body类型
+                    $("#myTab li a[href=" + "#" + data.body_method + "]").click()
+                    // body
+                    if (data.body_method === "form-data") {
+                        var body_str = data.api_body
+                        var body_object = JSON.parse(body_str)
+                        var list = []
+                        // 由于object类型的列表无法按照下标遍历，所以把数据插进object的列表（数组）
+                        for (var i in body_object) {
+                            list.push([i,body_object[i]])
+                        }
+                        // 默认是有一个键值对，所以根据数据的长度，确定还需要加几个键值对
+                        for (var c=0;c<list.length-1;c++) {
+                            $("#add").click()
+                        }
+                        for (var j=0;j<list.length;j++) {
+                            $("#mytable tbody")[0].children[j].children[0].innerText = list[j][0];
+                            $("#mytable tbody")[0].children[j].children[1].innerText = list[j][1];
+                        }
+                    }
+                    if (data.body_method === "x-www-form-urlencoded") {
+                        var body_str2 = data.api_body
+                        var body_object2 = JSON.parse(body_str2)
+                        var list2 = []
+                        // 由于object类型的列表无法按照下标遍历，所以把数据插进object的列表（数组）
+                        for (var i2 in body_object2) {
+                            list2.push([i2,body_object2[i2]])
+                        }
+                        // 默认是有一个键值对，所以根据数据的长度，确定还需要加几个键值对
+                        for (var c2=0;c2<list2.length-1;c2++) {
+                            $("#add2").click()
+                        }
+                        for (var j2=0;j2<list2.length;j2++) {
+                            $("#mytable2 tbody")[0].children[j2].children[0].innerText = list2[j2][0];
+                            $("#mytable2 tbody")[0].children[j2].children[1].innerText = list2[j2][1];
+                        }
+                    }
+                    if (data.body_method === "Text") {
+                        $("#raw_Text").val(data.api_body)
+                    }
+                    if (data.body_method === "JavaScript") {
+                        $("#raw_JavaScript").val(data.api_body)
+                    }
+                    if (data.body_method === "Html") {
+                        $("#raw_Html").val(data.api_body)
+                    }
+                    if (data.body_method === "Json") {
+                        $("#raw_Json").val(data.api_body)
+                    }
+                    if (data.body_method === "Xml") {
+                        $("#raw_Xml").val(data.api_body)
+                    }
+                }
+            );
+        }
+    </script>
+    <script>
+        // 调试窗口点击保存
+        $("#save_api").click(function () {
+            var api_name = $("#api_name").val();
+            var api_id = $("#api_id").text()
+            var api_method = document.getElementById("api_method").value;
+            var api_url = document.getElementById("api_url").value;
+            var api_hosts = document.getElementById("api_hosts").value;
+            var api_headers = document.getElementById("api_headers").value;
+             // 判断顶部的数据是否填充完
+            if(api_name === ''){alert('请输入接口名字！');return}
+            if(api_method === 'none'){alert('请选择请求方式！');return}
+            if(api_url === ''){alert('请输入url！');return}
+            if(api_hosts === ''){alert('请输入host！');return}
+            // 判断关键数据是否符合规则
+            if (api_hosts.slice(0,8) !== "https://" && api_hosts.slice(0,7) !== "http://") {
+                alert('hosts必须以"https:/"/或者"http://"作为开头');return;
+            }
+            if(api_headers !== ''){
+                  try {
+                      JSON.parse(api_headers)
+                  }catch (e) {
+                      alert('header请求头不符合json规范！');
+                      return
+                  }
+                }
+            //方法一 : find()也可以写成find("li.class")
+            //var href = $("#myTab").find("li[class='active']").html()
+            // 方法二:
+            //var href = $("ul#myTab li.active").text()
+            // 方法二：热饭方法 其他对下拉框获取文本有问题
+            var body_type = $("ul#myTab li[class='active']")[0].innerText
+            if (body_type === "none") {
+                var body_data = ""
+            }
+            if (body_type === "form-data") {
+                var dic = {};
+                for (var i = 0;i < $("#mytable tbody")[0].children.length;i++) {
+                    dic[$('#mytable tbody')[0].children[i].children[0].innerText] = $("#mytable tbody")[0].children[i].children[1].innerText;
+                }
+                var body_data = JSON.stringify(dic)
+            }
+            if (body_type === "x-www-form-urlencoded") {
+                var dic = {};
+                for (var i = 0;i < $("#mytable2 tbody")[0].children.length;i++) {
+                    dic[$("#mytable2 tbody")[0].children[i].children[0].innerText] = $("#mytable2 tbody")[0].children[i].children[1].innerText;
+                }
+                var body_data = JSON.stringify(dic)
+            }
+            if (body_type === "Text") {
+                var body_data = document.getElementById("raw_Text").value;
+            }
+            if (body_type === "JavaScript") {
+                var body_data = document.getElementById("raw_Javascript").value;
+            }
+            if (body_type === "Html") {
+                var body_data = document.getElementById("raw_Html").value;
+            }
+            if (body_type === "Json") {
+                var body_data = document.getElementById("raw_Json").value;
+            }
+            if (body_type === "Xml") {
+                var body_data = document.getElementById("raw_Xml").value;
+            }
+            $.post("/api_save/",
+                {
+                    "api_name": api_name,
+                    "api_id": api_id,
+                    "api_method": api_method,
+                    "api_url": api_url,
+                    "api_hosts": api_hosts,
+                    "api_headers": api_headers,
+                    "api_body_type": body_type,
+                    "api_body": body_data
+                },
+                function (data, status) {
+                    document.getElementById("ts").style.display = "none";
+                    document.location.reload()
+                }
+            )
+
+        })
+    </script>
+    <script>
+        // 调试窗口点击取消按钮后，隐藏调试弹窗
+        $("#cancel_api").click(function () {
+            // 三种写法
+            // $("#ts"[0].style.display = "none";
+            $("#ts").hide()
+            // $("#ts").css("display", "none");
+            // document.getElementById("ts").style.display = "none";
+            // 重新加载是因为每次取消后在进入键值对类型的body会增加一行  ,重新加载可以不用写上面隐藏ts弹框的代码
+            document.location.reload()
+        })
+    </script>
+    <script>
+        // 调试窗口点击send
+        $("#ts_send").click(
+            function () {
+                var body_type = $("ul#myTab li[class='active']")[0].innerText
+                if (body_type === "none") {
+                    var body_data = ""
+                }
+                if (body_type === "form-data") {
+                    var dic = {};
+                    for (var i = 0;i < $("#mytable tbody")[0].children.length;i++) {
+                        dic[$('#mytable tbody')[0].children[i].children[0].innerText] = $("#mytable tbody")[0].children[i].children[1].innerText;
+                    }
+                    var body_data = JSON.stringify(dic)
+                }
+                if (body_type === "x-www-form-urlencoded") {
+                    var dic = {};
+                    for (var i = 0;i < $("#mytable2 tbody")[0].children.length;i++) {
+                        dic[$("#mytable2 tbody")[0].children[i].children[0].innerText] = $("#mytable2 tbody")[0].children[i].children[1].innerText;
+                    }
+                    var body_data = JSON.stringify(dic)
+                }
+                if (body_type === "Text") {
+                    var body_data = document.getElementById("raw_Text").value;
+                }
+                if (body_type === "JavaScript") {
+                    var body_data = document.getElementById("raw_Javascript").value;
+                }
+                if (body_type === "Html") {
+                    var body_data = document.getElementById("raw_Html").value;
+                }
+                if (body_type === "Json") {
+                    var body_data = document.getElementById("raw_Json").value;
+                }
+                if (body_type === "Xml") {
+                    var body_data = document.getElementById("raw_Xml").value;
+                }
+                // 判断顶部的数据是否填充完
+                if($("#api_method").val() === 'none'){alert('请选择请求方式！');return}
+                if($("#api_url").val() === ''){alert('请输入url！');return}
+                if($("#api_hosts").val() === ''){alert('请输入host！');return}
+                // 判断关键数据是否符合规则
+                if ($("#api_hosts").val().slice(0,8) !== "https://" && $("#api_hosts").val().slice(0,7) !== "http://") {
+                    alert('hosts必须以"https:/"/或者"http://"作为开头');return
+                }
+                var header_api = $("#api_headers").val();
+                if(header_api !== ''){
+                  try {
+                      JSON.parse(header_api)
+                  }catch (e) {
+                      alert('header请求头不符合json规范！');
+                      return
+                  }
+                  // header为空的时候发送请求会500
+                } else {
+                    header_api = '{}'
+                }
+                $.post("/api_send/",
+                    {
+                        "api_name": $("#api_name").val(),
+                        "api_id": $("#api_id").text(),
+                        "api_method": $("#api_method").val(),
+                        "api_url": $("#api_url").val(),
+                        "api_hosts": $("#api_hosts").val(),
+                        "api_headers": header_api,
+                        "api_body_type": body_type,
+                        "api_body": body_data
+                    },
+                    function (data, status) {
+                        $("a[href='#response']").click();  // 点击返回体按钮
+                        $("#responce").val(data);  // 把接口执行后的结果返回到返回体多行文本框
+                    }
+                )
+            }
+        )
+    </script>
+    <script>
+        function copy_api(id) {
+            $.post("/copy_api/",
+                {
+                    "api_id": id
+                },
+                function (data, status) {
+                    document.location.reload()
+                }
+            )
+        }
+    </script>
+    <script>
+        // 显示异常值测试弹出框
+        function error_test(id) {
+            error_clean()
+            $("#error_div").css("display", "block");
+            $("#error_api_id").text(id);
+            // 异常值测试弹出框关闭 （注意：必须放在error_clean下，否则无法定位到重写的error_div元素）
+            $("#error_close").click(
+                function () {
+                    // $("#error_div")[0].style.display = 'none'
+                    document.getElementById("error_div").style.display = "none";
+                    document.location.reload();
+                }
+            );
+            // 获取之前存放的body
+            var body = $("#api_error_"+id).val()
+            // 用于暂时存放body
+            $("#error_api_body").val(body);
+            $("#error_play").click(
+                function () {
+                    var api_body = $("#error_api_body").val();
+                    var ready_error_data = $("#ready_error_data").val();
+                    console.log("api_body是：" + api_body);
+                    console.log("api_body类型是：" + typeof(api_body));
+                    console.log(ready_error_data);
+                    //把预替换数据从一个大字符串，按逗号解析成数组。
+                    var r = ready_error_data.split(',');
+                    // 判断是不是键值对的格式
+                    try {
+                        if (api_body === "") {
+                            alert("当前请求体不包含任何内容")
+                            console.log("这个body类型为none")
+                        } else {
+                            var s = JSON.parse(api_body);
+                            console.log(s);
+                            for (var i in s) {
+                                for (var j = 0;j < r.length;j++) {
+                                    // 字典形式的数据是可变类型，下面这种赋值以及浅拷贝会改变s的值，所以需要深拷贝
+                                    // var new_body = s
+                                    var new_body = {};
+                                    $.extend(true, new_body, s);
+                                    // 用户输入的123参数 会被写成“123” 所以用eval()进行求值再替换
+                                    new_body[i] = eval(r[j]);
+                                    // 把替换规则作为文本传给回调函数
+                                    var span_text = "替换：" + i + "-->" + (r[j]);
+                                    //for (var p in new_body) {
+                                        //console.log(p+"++++++++"+new_body[p]);
+                                    //}
+                                    $.post("/error_request/",
+                                        {
+                                            "api_id": id,
+                                            "new_body": JSON.stringify(new_body),
+                                            "span_text": span_text
+                                        },
+                                        function (data, status) {
+                                            // 写法一
+                                            // res = eval(data)
+                                            // var span_text = res.span_text
+                                            // var response = res.response
+                                            // error_show_response(span_text, response)
+                                            // 写法二
+                                            list = []
+                                            for (i in data) {
+                                                list.push(data[i])
+                                            }
+                                            var response = list[0]
+                                            var span_text = list[1]
+                                            error_show_response(span_text, response)
+                                        }
+                                    );
+                                }
+                            }
+                        }
+                    }catch (e) {
+                        //若不是，那就不需要做异常值测试了
+                        alert('当前接口的请求体类型不支持异常值测试！')
+                    }
+                }
+            );
+        }
+        // 把异常值调试界面写死
+        function error_clean() {
+            document.getElementById("error_div").innerHTML = '<div class="btn-group" style="float: right">\n' +
+                '            <button id="error_play" class="btn btn-success">开始测试</button>\n' +
+                '            <button id="error_close" class="btn btn-default">关闭</button>\n' +
+                '        </div>\n' +
+                '        <h4>接口：<small id="error_api_id" style="color: #64d92c"></small> 的异常值测试结果如下：</h4>\n' +
+                '        <strong>待替换数据:(用英文逗号隔开)</strong>\n' +
+                '        <input id="ready_error_data" type="text" style="color: black;border-radius: 5px;width: 99%"\n' +
+                '        value="\'a\',123,\'\',\' \',\'./?*&^\',\'中文\'"> <br><br>'
+        }
+        // 异常值测试的返回结果展示
+        function error_show_response(span_text, response) {
+            var error_div = document.getElementById('error_div'); // 声明这个请求体展示窗口
+            var s = document.createElement('span'); //创造替换标题
+            s.innerText = span_text;
+            var t = document.createElement('textarea'); //传教替换内容多行文本
+            t.style = 'width: 99%;height: 50px;border-radius: 5px;color: black;margin-bottom: 10px';
+            t.value = response;
+            error_div.appendChild(s);
+            error_div.appendChild(t);
+        }
+    </script>
+
+{#    <script>#}
+{#        // 这种用jquery去删除接口的写法，原本在删除按钮中定义了一个id="delete_api",但是还是导致失败，是因为循环显示接口信息后，页面存在多个#}
+{#        // id="delete_api"的按钮，所以无法#}
+        {#$("#delete_api").click(function () {#}
+        {#    $.get("/delete_apis/{{ api_id }}/",#}
+        {#    "",#}
+        {#    function (data, status) {#}
+        {#        document.location.reload()#}
+        {#    }#}
+        {#    )#}
+        {#{)#}
+    {#</script>#}
+</body>
+</html>

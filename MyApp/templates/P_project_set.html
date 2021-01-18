@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <nav class="navbar navbar-default" role="navigation" style="position: absolute;top: 0px;left: 300px;width:800px;z-index: 1">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <span style="font-size: xx-small" class="navbar-brand" >项目名称：{{ project.name }}</span>
+                <a class="navbar-brand" href="/project_list/">返回项目列表</a>
+            </div>
+        <div>
+        <ul class="nav navbar-nav">
+            <li><a href="/apis/{{ project.id }}/">接口库</a></li>
+            <li><a href="/cases/{{ project.id }}/">用例库</a></li>
+            <li class="active"><a href="/project_set/{{ project.id }}">项目设置</a></li>
+        </ul>
+    </div>
+    </div>
+    </nav>
+    <br><br>
+
+    <div style="text-align: center">
+        <h3>项目名称</h3>
+        <label for="name"></label>
+        <textarea name="" id="name" placeholder="{{ project.name }}" style="width: 70%" rows="4"></textarea> <br>
+        <h3>项目描述</h3>
+        <textarea name="" id="remark" placeholder="{{ project.remark }}"  style="width: 70%" rows="4"></textarea> <br>
+        <h3>其他管理员</h3>
+        <textarea name="" id="other_user" placeholder="{{ project.other_user }}"  style="width: 70%" rows="4"></textarea>
+    </div>
+    <br><br>
+    <button id="save" type="button" style="margin-left: 15%;width: 70%" class="btn btn-primary btn-lg btn-block">保存</button>
+    <script>
+        $("#save").click(function () {
+            $.post("/project_set_save/{{ project.id }}/",
+                {
+                    "name": $("#name").val(),
+                    "remark": $("#remark").val(),
+                    "other_user": $("#other_user").val()
+                },
+                function (data, status) {
+                    //document.location.reload()
+                    alert("修改成功")
+                }
+            )
+        })
+    </script>
+</body>
+</html>

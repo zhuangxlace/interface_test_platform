@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>项目列表</title>
+    <style>
+        .btn{
+
+        }
+    </style>
+</head>
+<body>
+    <!--新的新增项目按钮-->
+    <h3 style="padding-left: 10px;color: #353c48">项目列表：
+        <span style="font-size: small;color: grey;">
+            点击 <a href="#" onclick="javascript:document.getElementById('add_project_div').style.display='block'">新增项目</a>
+            即可创建属于您的新项目！
+        </span>
+    </h3>
+{#    <button style="height: 40px;top: 0px;position:fixed;left: -webkit-calc(50% - 75px)" class="btn btn-success"#}
+{#            onclick="javascript:document.getElementById('add_project_div').style.display = 'block'">#}
+{#        新增项目#}
+{#    </button>#}
+    <!--padding-left左内边距 span标签用于存放静态文本-->
+
+    <!--原来的新增项目按钮-->
+{#    <button style="border-left: 10px solid black;border-right: 10px solid black;border-top: 0;#}
+{#    position: fixed;top: 0px;left: -webkit-calc(50% - 75px);width: 150px;height: 40px;font-size: x-large;#}
+{#    background-color: white;color:black ;border-radius: 0px 0px 10px 10px;">新增项目</button>#}
+{#    position: fixed 固定定位#}
+    <table  class="table table-striped" >
+        <thead>
+            <tr>
+                <th>项目名字</th>
+                <th>项目备注</th>
+                <th>创建者</th>
+                <th>其他创建者</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        {% for i in project %}
+        <tbody>
+            <tr>
+                <td>{{ i.name }}</td>
+                <td>{{ i.remark }}</td>
+                <td>{{ i.user }}</td>
+                <td>{{ i.other_user }}</td>
+                <td>
+                    <button class="btn btn-primary" onclick="javascript:document.location.href = '/apis/{{ i.id }}/'">进入</button>
+                    <button class="btn btn-danger" onclick="delete_project('{{ i.id }}')">删除</button>
+                </td>
+            </tr>
+        </tbody>
+        {% endfor %}
+    </table>
+    <script>
+        function delete_project(id) {
+            if (confirm("是否删除") === true) {
+                $.get('/delete_project/', {
+                    "id": id
+                    },function (data, status) {
+                        document.location.reload()
+                    }
+
+                )
+            }
+        }
+    </script>
+{#    border：边框尺寸 边框样式 边框颜色；positon: absolute 绝对定位，border-radius 添加圆角边框， #}
+    {#padding-left左内边距#}
+    <div id="add_project_div" style="border: 1px solid black;position: absolute;left: 30%;top: 30px;padding-left: 10px;
+        border-radius: 5px;background-color: white;width: 50%;box-shadow: 4px 4px 8px gray;display: none" >
+        <h3>项目名称：(最多100字)</h3>
+        <label for="project_name_input"></label>
+        <input style="width: 95%" type="text" placeholder="请输入项目名" id="project_name_input"><br><br>
+        <label for="project_remark_input"></label>
+        <input style="width: 95%" type="text" placeholder="项目备注" id="project_remark_input"><br>
+        <br>
+        <button class="btn btn-primary" onclick="add_project()">
+            确定
+        </button>
+        <button onclick="javascript:document.getElementById('add_project_div').style.display = 'none'"
+                class="btn btn-danger">
+            取消
+        </button>
+		<br>
+    </div>
+    <script>
+        function add_project() {
+            var name = document.getElementById("project_name_input").value
+            var remark = document.getElementById("project_remark_input").value
+            $.get("/add_project/",
+                {
+                    "name": name,
+                    "remark": remark
+                },function (data, status) {
+                    document.location.reload()
+                })
+        }
+    </script>
+</body>
+</html>

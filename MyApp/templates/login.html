@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>测试平台登录</title>
+    <script type="text/javascript" src="../static/201908059658/js/jquery-1.11.0.min.js"></script>
+    <style>
+        body {
+        {#这个代表全局默认样式#}{#fixed背景图片不会随着页面的滚动而滚动。#}{#cover此时会保持图像的纵横比并将图像缩放成将完全覆盖背景定位区域的最小大小。#}
+            background: url("../static/login.jpg");
+            background-attachment: fixed;
+            background-size: cover;
+        }
+            .wqrf_input{
+                width: 200px;
+                background-color: #ded17d;
+                border-radius: 10px;
+                text-align: center;
+                float: right;
+                margin-right: 10px;
+                height: 30px;
+            }
+    </style>
+</head>
+<body>
+    <!--opacity设置透明度 ,有问题看12-->
+    <div style="margin-left: -webkit-calc(50% - 150px);width: 300px;
+    background-color: white;opacity: 0.8;border-radius: 10px;text-align: center">
+        <span style="font-size: xx-large;color: #2f3238">接口测试平台</span>
+        <br>
+        <span>欢迎使用</span>
+        <br><br>
+        <div style="padding-left: 10px;text-align: left">
+            <span style="font-size: large;color: #656565">用户名：</span>
+            <input id="username" type="text" class="wqrf_input">
+            <br><br>
+            <span style="font-size: large;color: #656565">密码：</span>
+            <input id="password" type="password" class="wqrf_input">
+        </div>
+        <br><br>
+        <button style="width: 90%;height: 35px;border-radius: 5px;background-color: #068e01;color: white;
+        font-size: large" onclick="login()">
+            登 陆
+        </button>
+        <br><br>
+        <span style="font-size: xx-small">若首次登录,请点击 <a href="javascript:register()">注册账号</a></span>
+        <br><br>
+    </div>
+    <script>
+        function login() {
+            var username = document.getElementById("username").value;
+            var password = document.getElementById("password").value;
+            $.get("/login_action/", {
+                "username": username,
+                "password": password
+            },function (data, status) {
+                console.log(data)
+                if (data === "成功") {
+                    document.location.href = "/home/"
+                }else {
+                    alert("用户名或密码错误");
+                }
+            });
+        }
+        function register() {
+            var username = document.getElementById("username").value;
+            var password = document.getElementById("password").value;
+            $.get("/register_action/", {
+                "username": username,
+                "password": password
+            },function (data, status) {
+                alert("数据: \n" + data + "\n状态: " + status)
+            });
+        }
+    </script>
+</body>
+</html>
