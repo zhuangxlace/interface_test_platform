@@ -421,7 +421,18 @@ def add_new_step(request):
 
 
 def delete_step(request, step_id):
-    DB_step.objects.filter(id=step_id).delete()
+    del_step = DB_step.objects.filter(id=step_id)
+    del_step_case_id = del_step[0].Case_id
+    del_step_index = del_step[0].index
+    del_step.delete()
+    # 将被删除小用例的后续小用例顺序向前1个  字段__gt==2 相当于 大于2
+    # 写法1 F()可用于数字字段的自增减
+    # from django.db.models import F
+    # DB_step.objects.filter(Case_id=del_step_case_id).filter(index__gt=del_step_index).update(index=F("index")-1)
+    # 写法2
+    for i in DB_step.objects.filter(Case_id=del_step_case_id).filter(index__gt=del_step_index):
+        i.index -= 1
+        i.save()
     return HttpResponse("👍")
 
 
