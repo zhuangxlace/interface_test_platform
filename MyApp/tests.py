@@ -268,5 +268,80 @@ import json
 # print(isAnagram("ab", "a"))
 
 
-for i in range(0,5,2):
-    print(i)
+# 字典转列表
+# dic = {
+#     "a": 12,
+#     "v": "34",
+#     "34": 3
+# }
+# list = []
+# for i,j in dic.items():
+#     list.append([i,j])
+# print(list)
+
+# def fun(bb):
+#     return {"1":bb}
+# print({**fun(3)})
+
+
+# 给定一个整数数组 nums ，找到一个具有最大和的连续子数组（子数组最少包含一个元素），返回其最大和。
+# def maxSubArray(nums: list) -> list:
+#     # f(n)=max(f(n-1)+nums[n],nums[n])
+#     if len(nums) == 1:
+#         return nums[0]
+#     max_ending = nums[0]
+#     print("第一个",str(max_ending))
+#     res = []
+#     res.append(max_ending)
+#     for i in range(1, len(nums)):
+#         print(nums[i])
+#         print(max_ending)
+#         max_ending = max(max_ending+nums[i],nums[i])
+#         print("max_ending=%d" % max_ending)
+#         res.append(max_ending)
+#     return max(res)
+# print(maxSubArray([-1, -2]))
+
+
+# 返回最大不重复最大子字符串的长度
+# def lengthOfLongestSubstring(s: str) -> int:
+#     if s == "":
+#         return 0
+#     res = []
+#     for i in range(len(s)):
+#         # temp = s[i]
+#         # new_s = s[i+1:].find(temp)
+#         # res = max(res, new_s + 1)
+#         listt = []
+#         flag = i
+#         while flag < len(s) and s[flag] not in listt:
+#             listt.append(s[flag])
+#             flag += 1
+#         res.append(len(listt))
+#     return max(res)
+
+
+# def addToArrayForm(A, K: int):
+#     s, res = "", []
+#     for i in A:
+#         s += str(i)
+#     for i in str(int(s) + K):
+#         res.append(int(i))
+#     return res
+# a = [3]
+# print(addToArrayForm(a, 1))
+
+# a = [[1,9,9], [2,6], [6,7,8,9,0,66]]
+# print(sorted(a,key=lambda x:len(x)))
+# def findLengthOfLCIS(nums) -> int:
+#     dp = [[] for i in range(len(nums))]
+#     dp[0] = [nums[0]]
+#     for i in range(len(nums) - 1):
+#         if nums[i] < nums[i + 1]:
+#             dp[i + 1] = dp[i] + [nums[i + 1]]
+#         else:
+#             dp[i + 1] = [nums[i + 1]]
+#     return len(sorted(dp, key=lambda x:len(x))[-1])
+#
+# print(findLengthOfLCIS([1]))
+

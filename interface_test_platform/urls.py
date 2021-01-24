@@ -50,6 +50,13 @@ urlpatterns = [
     path('api_send/', api_send),  # 发送接口请求
     path('copy_api/', api_copy),  # 复制接口
     path('error_request/', error_request),  # 调用异常测试接口
+    re_path('^add_case/(?P<project_id>.*)/$', add_case),  # 增加用例
+    re_path('del_case/(?P<case_id>.*)/(?P<project_id>.*)/$', del_case),  # 删除用例
+    re_path('^copy_case/(?P<case_id>.*)/(?P<project_id>.*)/$', copy_case),  # 复制用例
+    path('get_small/', get_small),  # 获取小用例步骤的列表数据
+    path('add_new_step/', add_new_step),  # 新增小用例
+    re_path('^delete_step/(?P<step_id>.*)/$', delete_step),  # 删除小用例
+    path('user_upload/', user_upload),  # 上传头像
     path('api_send_home/', api_send_home),  # 首页发送接口请求
     path('get_home_log/', get_home_log),  # 获得最近请求记录
     path('get_api_log_home/', get_api_log_home),  # 获得完整的一条的测试记录

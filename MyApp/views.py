@@ -17,12 +17,12 @@ def welcome(request):
 
 @login_required
 def home(request):
-    return render(request, "welcome.html", {"whichHTML": "home.html", "oid": request.user.username})
+    return render(request, "welcome.html", {"whichHTML": "home.html", "oid": request.user.username, "username": request.user.username, "userimg": str(request.user.id) + ".jpg"})
 
 
 @login_required
 def home2(request, log_id=""):
-    return render(request, "welcome.html", {"whichHTML": "home2.html", "oid": request.user.id, "ooid": log_id})
+    return render(request, "welcome.html", {"whichHTML": "home2.html", "oid": request.user.id, "ooid": log_id, "username": request.user.username, "userimg": str(request.user.id) + ".jpg"})
 
 
 # 返回子页面  后面两个入参是urls.py中的path中的值
@@ -60,8 +60,10 @@ def child_json(eid, oid, ooid=""):
         res["project"] = data
         res["apis"] = apis
     if eid == "P_cases.html":
+        cases = DB_cases.objects.filter(project_id=oid)
         data = DB_project.objects.filter(id=oid)[0]
         res["project"] = data
+        res["cases"] = cases
     if eid == "P_project_set.html":
         data = DB_project.objects.filter(id=oid)[0]
         res["project"] = data
@@ -132,11 +134,11 @@ def pei(request):
 
 
 def api_help(request):
-    return render(request, "welcome.html", {"whichHTML": "help.html", "oid": ""})
+    return render(request, "welcome.html", {"whichHTML": "help.html", "oid": "", "username": request.user.username, "userimg": str(request.user.id) + ".jpg"})
 
 
 def project_list(request):
-    return render(request, "welcome.html", {"whichHTML": "project_list.html", "oid": ""})
+    return render(request, "welcome.html", {"whichHTML": "project_list.html", "oid": "", "username": request.user.username, "userimg": str(request.user.id) + ".jpg"})
 
 
 def delete_project(request):
@@ -144,6 +146,11 @@ def delete_project(request):
     DB_project.objects.filter(id=project_id).delete()
     # 删除项目的时候把接口表中与项目id关联的接口也都删掉
     DB_apis.objects.filter(project_id=project_id).delete()
+    # 删除项目的时候把用例表中与项目id关联的用例也都删掉,以及与用例id关联的小步骤用例
+    all_cases = DB_cases.objects.filter(project_id=project_id)
+    for i in all_cases.values():
+        DB_step.objects.filter(Case_id=i["id"]).delete()  # 删除小步骤
+    all_cases.delete()  # 删除所有的用例
     return HttpResponse("👍")
 
 
@@ -156,15 +163,15 @@ def add_project(request):
 
 
 def open_apis(request, project_id):
-    return render(request, "welcome.html", {"whichHTML": "P_apis.html", "oid": project_id})
+    return render(request, "welcome.html", {"whichHTML": "P_apis.html", "oid": project_id, "username": request.user.username, "userimg": str(request.user.id) + ".jpg"})
 
 
 def open_cases(request, project_id):
-    return render(request, "welcome.html", {"whichHTML": "P_cases.html", "oid": project_id})
+    return render(request, "welcome.html", {"whichHTML": "P_cases.html", "oid": project_id, "username": request.user.username, "userimg": str(request.user.id) + ".jpg"})
 
 
 def open_project_set(request, project_id):
-    return render(request, "welcome.html", {"whichHTML": "P_project_set.html", "oid": project_id})
+    return render(request, "welcome.html", {"whichHTML": "P_project_set.html", "oid": project_id, "username": request.user.username, "userimg": str(request.user.id) + ".jpg"})
 
 
 def project_set_save(request, project_id):
@@ -378,6 +385,46 @@ def error_request(request):
         return HttpResponse(json.dumps(res_json), content_type="application/json")
 
 
+def add_case(request, project_id):
+    DB_cases.objects.create(project_id=project_id, name="未命名的用例")
+    #  可写成 return HttpResponseRedirect("/cases/%s/" % project_id)
+    return HttpResponseRedirect("/cases/" + project_id + "/")
+
+
+def del_case(request, case_id, project_id):
+    DB_cases.objects.filter(id=case_id).delete()
+    DB_step.objects.filter(Case_id=case_id).delete()
+    return HttpResponseRedirect("/cases/%s/" % project_id)
+
+
+def copy_case(request, case_id, project_id):
+    case = DB_cases.objects.filter(id=case_id)[0]
+    DB_cases.objects.create(project_id=project_id, name=case.name + "_复制")
+    return HttpResponseRedirect("/cases/%s/" % project_id)
+
+
+def get_small(request):
+    case_id = request.POST['case_id']
+    # 可以只获取部分字段如：values("Case_id","index","name")
+    steps = DB_step.objects.filter(Case_id=case_id).order_by("index").values()
+    res = {
+        "all_steps": list(steps)
+    }
+    return HttpResponse(json.dumps(res), content_type="application/json")
+
+
+def add_new_step(request):
+    case_id = request.POST["case_id"]
+    step_num = len(DB_step.objects.filter(Case_id=case_id))
+    DB_step.objects.create(Case_id=case_id, name="我是新步骤", index=step_num + 1)
+    return HttpResponse("👍")
+
+
+def delete_step(request, step_id):
+    DB_step.objects.filter(id=step_id).delete()
+    return HttpResponse("👍")
+
+
 def api_send_home(request):
     ts_method = request.POST['ts_method']
     ts_url = request.POST['ts_url']
@@ -450,3 +497,16 @@ def get_api_log_home(request):
     log_id = request.POST["log_id"]
     res = DB_apis_log.objects.filter(id=log_id).values()
     return HttpResponse(json.dumps(res[0]), content_type="application/json")
+
+
+# 上传用户头像
+def user_upload(request):
+    file = request.FILES.get("fileUpload",None)  # 靠name获取上传的文件，如果没有，避免报错，设置成None
+    if not file:
+        return HttpResponseRedirect('/home/')  # 如果没有则返回到首页
+    new_name = str(request.user.id) + '.jpg'  # 设置好这个新图片的名字
+    destination = open("MyApp/static/user_img/"+new_name, 'wb+')  # 打开特定的文件进行二进制的写操作
+    for chunk in file.chunks():  # 分块写入文件
+        destination.write(chunk)
+    destination.close()
+    return HttpResponseRedirect('/home/')  # 返回到首页

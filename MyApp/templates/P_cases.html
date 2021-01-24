@@ -6,19 +6,148 @@
 </head>
 <body>
     <nav class="navbar navbar-default" role="navigation" style="position: absolute;top: 0px;left: 300px;width:800px;z-index: 1">
-    <div class="container-fluid">
-    <div class="navbar-header">
-        <span style="font-size: xx-small" class="navbar-brand" >项目名称：{{ project.name }}</span>
-        <a class="navbar-brand" href="/project_list/">返回项目列表</a>
-    </div>
-    <div>
-        <ul class="nav navbar-nav">
-            <li><a href="/apis/{{ project.id }}/">接口库</a></li>
-            <li class="active"><a href="/cases/{{ project.id }}/">用例库</a></li>
-            <li><a href="/project_set/{{ project.id }}">项目设置</a></li>
-        </ul>
-    </div>
-    </div>
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <span style="font-size: xx-small" class="navbar-brand" >项目名称：{{ project.name }}</span>
+                <a class="navbar-brand" href="/project_list/">返回项目列表</a>
+            </div>
+            <div>
+                <ul class="nav navbar-nav">
+                    <li><a href="/apis/{{ project.id }}/">接口库</a></li>
+                    <li class="active"><a href="/cases/{{ project.id }}/">用例库</a></li>
+                    <li><a href="/project_set/{{ project.id }}">项目设置</a></li>
+                </ul>
+            </div>
+        </div>
     </nav>
+    <br>
+    <br>
+    <br>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th style="width: 10%">id</th>
+                <th style="width: 60%">用例名称</th>
+                <th style="width: 30%">操作</th>
+            </tr>
+        </thead>
+        {% for i in cases %}
+        <tbody>
+            <tr>
+                <td>{{ i.id }}</td>
+                <td>{{ i.name }}</td>
+                <td>
+                    <button class="btn btn-primary">运行</button>
+                    <button class="btn btn-default" onclick="show_small('{{ i.id }}', '{{ i.name }}')">设置</button>
+                    <button class="btn btn-default">查看报告</button>
+                    <a href="/copy_case/{{ i.id }}/{{ project.id }}/"><button class="btn btn-default">复制</button></a>
+                    <button class="btn btn-danger" onclick="del_case({{ i.id }}, {{ project.id }})">删除</button>
+                </td>
+            </tr>
+        </tbody>
+        {% endfor %}
+    </table>
+    <a href="/add_case/{{ project.id }}/">
+        <button style="margin-left: 10px" class="btn btn-success">新增</button>
+    </a>
+    <!--小用例列表-->
+    <!--position:absolute固定位置，right:100%距离右边界一整个屏幕-->
+    <!--z-index堆叠顺序,最大值999，此处设置为2,，低于左侧菜单栏的3，可以在小用例列表打开菜单栏-->
+    <div id="left_div" style="background-color: white;border: 1px solid black;z-index: 2;display: none;
+    width:48%;height:100%;position:absolute;right:100%;top:0px;overflow-y: visible;text-align: center">
+        <button style="text-align: center" class="btn btn-success" id="add_new_step">新增小用例接口</button>
+        <button style="text-align: center" class="btn btn-primary">新增登录态接口</button>
+        <button style="float: right" class="btn btn-danger" id="small_close">关闭</button>
+        <div id="small_list">
+            <!--margin-top上外边距-->
+            <button style="width: 98%;margin-top: 5px">小用例1</button><br>
+            <button style="width: 98%;margin-top: 5px">小用例2</button>
+            <button style="width: 98%;margin-top: 5px">小用例3</button>
+        </div>
+        <p style="position: absolute;bottom: 0px;left: 5px">
+            用例id:<span id="case_id"></span>&nbsp;
+            用例名称:<span id="case_name"></span>
+        </p>
+    </div>
+    <script>
+        // 删除用例
+        function del_case(case_id, project_id) {
+            document.location.href = "/del_case/" + case_id + "/" + project_id + "/"
+        }
+        // 刷新小用例列表
+        function refresh_left_div(case_id) {
+            var d = document.getElementById('small_list');
+            d.innerHTML = ""
+            $.post("/get_small/",
+                {
+                    "case_id": case_id
+                },
+                function (data, status) {
+                    for (var i = 0 ;i<data["all_steps"].length;i++) {
+                        console.log(data["all_steps"][i])
+                        var bu = document.createElement('button');
+                        bu.style = 'margin-top: 5px;width: 90%;background-color: #f5f3f3;';
+                        bu.className = 'btn btn-defaul';
+                        bu.innerText = data["all_steps"][i]["index"] + "-" +data["all_steps"][i]["name"];
+                        bu.id = 'step_btn_' + data["all_steps"][i]["id"];
+                        // 小步骤的删除按钮
+                        var del = document.createElement('button');
+                        del.className ='btn btn-default';
+                        del.style.fontSize = 'xx-small';
+                        del.innerText = 'delete';
+                        del.style.height = '28px';
+                        del.style.cssFloat='right';
+                        del.style.marginTop='8px';
+                        del.idd = data["all_steps"][i]["id"];
+                        del.onclick = function(){
+                            $.post('/delete_step/'+this.idd+'/',
+                                {
+
+                            },function (data, status) {
+                                refresh_left_div(document.getElementById('case_id').innerText)
+                            })
+                        };
+                        d.appendChild(bu);
+                        d.appendChild(del);
+                    }
+                }
+            )
+        }
+        // 点击设置按钮弹出小用例框
+        function show_small(case_id, case_name) {
+            if(document.getElementById('left_div').style.display === 'none'){
+                $("#left_div").css("display","block");
+                $("#left_div").animate({right:'52%'},'fast');
+
+            }else{
+                $("#left_div").css("display","none");  // 消失
+                $("#left_div").animate({right:'100%'},'fast');  // 滚回屏幕左边
+                $("#left_div").css("display","block");  // 出现
+                $("#left_div").animate({right:'52%'},'fast'); // 滚出
+            }
+            $("#case_id").text(case_id);
+            $("#case_name").text(case_name);
+            refresh_left_div(case_id)
+        }
+        // 关闭小用例弹出框
+        $("#small_close").click(
+            function () {
+                $("#left_div").css("display", "none");
+                $("#left_div").animate({right:'100%'}, "fast");
+            }
+        );
+        // 新增小用例
+        $("#add_new_step").click(
+            function () {
+                $.post("/add_new_step/",
+                    {
+                        "case_id": $("#case_id").text()
+                    },
+                function (data, status) {
+                    refresh_left_div($("#case_id").text())
+                });
+            }
+        );
+    </script>
 </body>
 </html>
